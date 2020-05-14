@@ -64,7 +64,8 @@ TrafficManagerLocal::TrafficManagerLocal(
                                       localization_frame_ptr,
                                       collision_frame_ptr,
                                       tl_frame_ptr,
-                                      control_frame_ptr)),
+                                      control_frame_ptr,
+                                      debug_helper)),
 
     alsm(ALSM(registered_vehicles,
               buffer_map,
@@ -186,6 +187,8 @@ void TrafficManagerLocal::Run() {
       step_end_trigger.notify_one();
     } else {
       episode_proxy.Lock()->ApplyBatch(std::move(batch_command), false);
+
+      std::this_thread::sleep_for(0.05s);
     }
   }
 }

@@ -76,6 +76,9 @@ void CollisionStage::Update(const unsigned long index) {
                                                                        other_actor_id,
                                                                        look_ahead_index);
         if (negotiation_result.first) {
+          debug_helper.DrawArrow(ego_location + cg::Location(0, 0, 2),
+                                 simulation_state.GetLocation(other_actor_id) + cg::Location(0, 0, 2),
+                                 0.2f, 0.5f, {255u, 0u, 0u}, 0.05f);
           if ((other_actor_type == ActorType::Vehicle
                && parameters.GetPercentageIgnoreVehicles(ego_actor_id) <= (rand() % 101))
               || (other_actor_type == ActorType::Pedestrian

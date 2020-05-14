@@ -19,7 +19,8 @@ MotionPlanStage::MotionPlanStage(
   const LocalizationFramePtr & localization_frame,
   const CollisionFramePtr &collision_frame,
   const TLFramePtr &tl_frame,
-  ControlFramePtr &output_array)
+  ControlFramePtr &output_array,
+  cc::DebugHelper &debug_helper)
   : vehicle_id_list(vehicle_id_list),
     simulation_state(simulation_state),
     parameters(parameters),
@@ -32,7 +33,8 @@ MotionPlanStage::MotionPlanStage(
     localization_frame(localization_frame),
     collision_frame(collision_frame),
     tl_frame(tl_frame),
-    output_array(output_array) {}
+    output_array(output_array),
+    debug_helper(debug_helper) {}
 
 void MotionPlanStage::Update(const unsigned long index) {
   const ActorId actor_id = vehicle_id_list.at(index);
@@ -157,6 +159,12 @@ void MotionPlanStage::Update(const unsigned long index) {
 
   // In case of collision or traffic light hazard.
   bool emergency_stop = (tl_hazard || collision_emergency_stop || !safe_after_junction);
+
+  cc::DebugHelper::Color debug_color {0, 0, 0};
+  if (collision_emergency_stop) debug_color.r = 255u;
+  if (tl_hazard) debug_color.g = 255u;
+  if (!safe_after_junction) debug_color.b = 255u;
+  debug_helper.DrawPoint(ego_location + cg::Location(0,0,3), 0.15f, debug_color, 0.05f);
 
   ActuationSignal actuation_signal{0.0f, 0.0f, 0.0f};
   cg::Transform teleportation_transform;
