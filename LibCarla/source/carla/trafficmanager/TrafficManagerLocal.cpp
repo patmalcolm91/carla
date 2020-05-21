@@ -188,7 +188,7 @@ void TrafficManagerLocal::Run() {
     } else {
       episode_proxy.Lock()->ApplyBatch(std::move(batch_command), false);
 
-      std::this_thread::sleep_for(0.05s);
+      // std::this_thread::sleep_for(0.03s);
     }
   }
 }

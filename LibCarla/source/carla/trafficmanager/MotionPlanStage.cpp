@@ -127,6 +127,9 @@ void MotionPlanStage::Update(const unsigned long index) {
 
   // Don't enter junction if there isn't enough free space after the junction.
   bool safe_after_junction = true;
+  ActorId blocking_actor_id = 0u;
+  cg::Location blocking_actor_location;
+  cg::Location mid_point;
   SimpleWaypointPtr junction_end_point = localization.junction_end_point;
   SimpleWaypointPtr safe_point = localization.safe_point;
   if (!tl_hazard && localization.is_at_junction_entrance
@@ -134,7 +137,7 @@ void MotionPlanStage::Update(const unsigned long index) {
       && junction_end_point->DistanceSquared(safe_point) > SQUARE(MIN_SAFE_INTERVAL_LENGTH)) {
     ActorIdSet initial_set = track_traffic.GetPassingVehicles(junction_end_point->GetId());
     float safe_interval_length_squared = junction_end_point->DistanceSquared(safe_point);
-    cg::Location mid_point = (junction_end_point->GetLocation() + safe_point->GetLocation())/2.0f;
+    mid_point = (junction_end_point->GetLocation() + safe_point->GetLocation())/2.0f;
     // Scan through the safe interval and find if any vehicles are present in it
     // by finding their occupied waypoints.
     for (SimpleWaypointPtr current_waypoint = junction_end_point;
@@ -147,10 +150,11 @@ void MotionPlanStage::Update(const unsigned long index) {
                           std::inserter(difference, difference.begin()));
       if (difference.size() > 0) {
         for (const ActorId &blocking_id: difference) {
-          cg::Location blocking_actor_location = simulation_state.GetLocation(blocking_id);
+          blocking_actor_location = simulation_state.GetLocation(blocking_id);
           if (cg::Math::DistanceSquared(blocking_actor_location, mid_point) < SQUARE(MAX_JUNCTION_BLOCK_DISTANCE)
               && simulation_state.GetVelocity(blocking_id).SquaredLength() < SQUARE(AFTER_JUNCTION_MIN_SPEED)) {
             safe_after_junction = false;
+            blocking_actor_id = blocking_id;
           }
         }
       }
@@ -160,11 +164,25 @@ void MotionPlanStage::Update(const unsigned long index) {
   // In case of collision or traffic light hazard.
   bool emergency_stop = (tl_hazard || collision_emergency_stop || !safe_after_junction);
 
-  cc::DebugHelper::Color debug_color {0, 0, 0};
-  if (collision_emergency_stop) debug_color.r = 255u;
-  if (tl_hazard) debug_color.g = 255u;
-  if (!safe_after_junction) debug_color.b = 255u;
-  debug_helper.DrawPoint(ego_location + cg::Location(0,0,3), 0.15f, debug_color, 0.05f);
+  if (!safe_after_junction)
+  {
+    debug_helper.DrawArrow(ego_location + cg::Location(0, 0, 2),
+                           mid_point + cg::Location(0, 0, 2),
+                           0.5f, 0.5f, {0u, 255u, 255u}, 0.02f);
+    debug_helper.DrawArrow(mid_point + cg::Location(0, 0, 2),
+                           blocking_actor_location + cg::Location(0, 0, 2),
+                           0.5f, 0.5f, {255u, 0u, 255u}, 0.02f);
+    debug_helper.DrawString(ego_location + cg::Location(0, 0, 3),
+                            std::to_string(blocking_actor_location.Distance(mid_point)),
+                            false, {255u, 0u, 0u}, 0.02f);
+    debug_helper.DrawString(ego_location + cg::Location(0, 0, 4),
+                            std::to_string(cg::Math::DistanceSquared(blocking_actor_location, mid_point) < SQUARE(MAX_JUNCTION_BLOCK_DISTANCE)),
+                            false, {255u, 255u, 0u}, 0.02f);
+  }
+
+  if (localization.is_at_junction_entrance) {
+    debug_helper.DrawPoint(ego_location + cg::Location(0, 0, 5), 0.2f, {255u, 255u, 255u}, 0.02f);
+  }
 
   ActuationSignal actuation_signal{0.0f, 0.0f, 0.0f};
   cg::Transform teleportation_transform;

@@ -160,6 +160,8 @@ void LocalizationStage::Update(const unsigned long index) {
   if (is_at_junction_entrance && vehicles_at_junction.find(actor_id) == vehicles_at_junction.end()) {
     vehicles_at_junction.insert(actor_id);
 
+    debug_helper.DrawPoint(vehicle_location + cg::Location(0, 0, 6), 0.2f, {227u, 122u, 57u}, 5.0f);
+
     bool entered_junction = false;
     bool past_junction = false;
     bool safe_point_found = false;
@@ -220,6 +222,8 @@ void LocalizationStage::Update(const unsigned long index) {
   }
   else if (!is_at_junction_entrance && vehicles_at_junction.find(actor_id) != vehicles_at_junction.end()) {
     vehicles_at_junction.erase(actor_id);
+
+    debug_helper.DrawPoint(vehicle_location + cg::Location(0, 0, 6), 0.2f, {0u, 222u, 0u}, 5.0f);
 
     output.junction_end_point = nullptr;
     output.safe_point = nullptr;
