@@ -150,17 +150,12 @@ void LocalizationStage::Update(const unsigned long index) {
     PushWaypoint(actor_id, track_traffic, waypoint_buffer, next_wp);
   }
 
-  LocalizationData &output = output_array->at(index);
-  output.is_at_junction_entrance = is_at_junction_entrance;
-
   SimpleWaypointPtr junction_end_point = nullptr;
   SimpleWaypointPtr safe_point_after_junction = nullptr;
 
   // Find safe interval after junction exit.
-  if (is_at_junction_entrance && vehicles_at_junction.find(actor_id) == vehicles_at_junction.end()) {
-    vehicles_at_junction.insert(actor_id);
-
-    debug_helper.DrawPoint(vehicle_location + cg::Location(0, 0, 6), 0.2f, {227u, 122u, 57u}, 5.0f);
+  if (is_at_junction_entrance
+      && vehicles_at_junction_entrance.find(actor_id) == vehicles_at_junction_entrance.end()) {
 
     bool entered_junction = false;
     bool past_junction = false;
@@ -217,14 +212,23 @@ void LocalizationStage::Update(const unsigned long index) {
       safe_point_after_junction = nullptr;
     }
 
-    output.junction_end_point = junction_end_point;
-    output.safe_point = safe_point_after_junction;
+    vehicles_at_junction_entrance[actor_id] = {junction_end_point, safe_point_after_junction};
+    debug_helper.DrawLine(vehicle_location, vehicle_location + cg::Location(0, 0, 50), 0.5f, {0u, 0u, 0u}, 10.0f);
   }
-  else if (!is_at_junction_entrance && vehicles_at_junction.find(actor_id) != vehicles_at_junction.end()) {
-    vehicles_at_junction.erase(actor_id);
+  else if (!is_at_junction_entrance
+           && vehicles_at_junction_entrance.find(actor_id) != vehicles_at_junction_entrance.end()) {
 
-    debug_helper.DrawPoint(vehicle_location + cg::Location(0, 0, 6), 0.2f, {0u, 222u, 0u}, 5.0f);
+    vehicles_at_junction_entrance.erase(actor_id);
+  }
 
+  LocalizationData &output = output_array->at(index);
+  output.is_at_junction_entrance = is_at_junction_entrance;
+
+  if (is_at_junction_entrance) {
+    const SimpleWaypointPair &safe_space_end_points = vehicles_at_junction_entrance.at(actor_id);
+    output.junction_end_point = safe_space_end_points.first;
+    output.safe_point = safe_space_end_points.second;
+  } else {
     output.junction_end_point = nullptr;
     output.safe_point = nullptr;
   }
@@ -235,12 +239,12 @@ void LocalizationStage::Update(const unsigned long index) {
 
 void LocalizationStage::RemoveActor(ActorId actor_id) {
     last_lane_change_location.erase(actor_id);
-    vehicles_at_junction.erase(actor_id);
+    vehicles_at_junction_entrance.erase(actor_id);
 }
 
 void LocalizationStage::Reset() {
   last_lane_change_location.clear();
-  vehicles_at_junction.clear();
+  vehicles_at_junction_entrance.clear();
 }
 
 SimpleWaypointPtr LocalizationStage::AssignLaneChange(const ActorId actor_id,

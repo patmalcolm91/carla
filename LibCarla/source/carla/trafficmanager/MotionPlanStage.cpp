@@ -155,6 +155,14 @@ void MotionPlanStage::Update(const unsigned long index) {
               && simulation_state.GetVelocity(blocking_id).SquaredLength() < SQUARE(AFTER_JUNCTION_MIN_SPEED)) {
             safe_after_junction = false;
             blocking_actor_id = blocking_id;
+
+            debug_helper.DrawArrow(ego_location + cg::Location(0, 0, 7),
+                                    junction_end_point->GetLocation() + cg::Location(0, 0, 6),
+                                    0.2f, 0.2f, {255u, 255u, 0u}, 0.02f);
+
+            debug_helper.DrawArrow(ego_location + cg::Location(0, 0, 7),
+                                    safe_point->GetLocation() + cg::Location(0, 0, 6),
+                                    0.2f, 0.2f, {0u, 255u, 0u}, 0.02f);
           }
         }
       }
